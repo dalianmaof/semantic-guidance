@@ -16,6 +16,22 @@ function setStatus(message) {
   document.getElementById("status-text").textContent = message;
 }
 
+function setControlsEnabled(enabled) {
+  const ids = [
+    "prev-button",
+    "next-button",
+    "save-button",
+    "scene-tags",
+    "target-object-id",
+    "notes",
+    "add-object-button",
+    "add-relation-button",
+  ];
+  for (const id of ids) {
+    document.getElementById(id).disabled = !enabled;
+  }
+}
+
 function parseAttributes(value) {
   return value.split(",").map((part) => part.trim()).filter(Boolean);
 }
@@ -158,6 +174,8 @@ function renderRelationList() {
 }
 
 async function loadImage(index) {
+  setControlsEnabled(false);
+  setStatus("Loading image...");
   state.index = index;
   const imageName = currentImageName();
   const image = document.getElementById("scene-image");
@@ -172,9 +190,15 @@ async function loadImage(index) {
   renderForm();
   renderObjectList();
   renderRelationList();
+  setControlsEnabled(true);
+  setStatus(`Ready: ${currentImageName()}`);
 }
 
 async function saveAnnotation() {
+  if (!state.annotation) {
+    setStatus("Annotation is not ready yet.");
+    return;
+  }
   state.annotation.scene_tags = parseCsv(document.getElementById("scene-tags").value);
   state.annotation.target_object_id = document.getElementById("target-object-id").value.trim();
   state.annotation.notes = document.getElementById("notes").value;
@@ -187,6 +211,8 @@ async function saveAnnotation() {
 }
 
 async function bootstrap() {
+  setControlsEnabled(false);
+  setStatus("Loading image list...");
   const response = await fetch("/api/images");
   const data = await response.json();
   state.images = data.images;
@@ -194,13 +220,23 @@ async function bootstrap() {
   document.getElementById("prev-button").onclick = () => loadImage(Math.max(0, state.index - 1));
   document.getElementById("next-button").onclick = () => loadImage(Math.min(state.images.length - 1, state.index + 1));
   document.getElementById("add-object-button").onclick = () => {
+    if (!state.annotation) {
+      setStatus("Wait until the image is loaded.");
+      return;
+    }
     state.annotation.objects.push(createEmptyObject());
     renderObjectList();
     renderCanvasBoxes();
+    setStatus("Added object row.");
   };
   document.getElementById("add-relation-button").onclick = () => {
+    if (!state.annotation) {
+      setStatus("Wait until the image is loaded.");
+      return;
+    }
     state.annotation.relations.push(createEmptyRelation());
     renderRelationList();
+    setStatus("Added relation row.");
   };
   if (state.images.length > 0) {
     await loadImage(0);

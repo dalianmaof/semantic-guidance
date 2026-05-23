@@ -14,9 +14,9 @@
       </aside>
       <main class="workspace">
         <div class="toolbar">
-          <button id="prev-button">Prev</button>
-          <button id="next-button">Next</button>
-          <button id="save-button">Save</button>
+          <button id="prev-button" disabled>Prev</button>
+          <button id="next-button" disabled>Next</button>
+          <button id="save-button" disabled>Save</button>
         </div>
         <div class="status-row" id="status-text">Loading...</div>
         <div class="canvas-panel">
@@ -24,22 +24,22 @@
           <div id="annotation-canvas"></div>
         </div>
         <section class="form-panel">
-          <label>Scene Tags <input id="scene-tags" type="text"></label>
-          <label>Target Object ID <input id="target-object-id" type="text"></label>
-          <textarea id="notes" placeholder="notes"></textarea>
+          <label>Scene Tags <input id="scene-tags" type="text" disabled></label>
+          <label>Target Object ID <input id="target-object-id" type="text" disabled></label>
+          <textarea id="notes" placeholder="notes" disabled></textarea>
         </section>
         <section class="editor-grid">
           <div class="editor-panel">
             <div class="panel-header">
               <h2>Objects</h2>
-              <button id="add-object-button" type="button">Add Object</button>
+              <button id="add-object-button" type="button" disabled>Add Object</button>
             </div>
             <div id="object-list"></div>
           </div>
           <div class="editor-panel">
             <div class="panel-header">
               <h2>Relations</h2>
-              <button id="add-relation-button" type="button">Add Relation</button>
+              <button id="add-relation-button" type="button" disabled>Add Relation</button>
             </div>
             <div id="relation-list"></div>
           </div>

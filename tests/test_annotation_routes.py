@@ -67,3 +67,14 @@ def test_index_html_contains_annotation_shell():
     assert "image-list" in html
     assert "annotation-canvas" in html
     assert "save-button" in html
+
+
+def test_index_html_starts_with_disabled_action_buttons():
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert 'id="save-button" disabled' in html
+    assert 'id="add-object-button" type="button" disabled' in html
