@@ -1,2 +1,4 @@
 .superpowers/
 .playwright-mcp/
+.venv/
+.pytest_cache/
