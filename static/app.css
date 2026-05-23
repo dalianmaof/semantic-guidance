@@ -1,0 +1,28 @@
+body { margin: 0; font-family: Arial, sans-serif; }
+.layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+.sidebar { border-right: 1px solid #ddd; padding: 16px; overflow: auto; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin-bottom: 8px; }
+.sidebar button { width: 100%; text-align: left; padding: 8px 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+.sidebar button.active-image { background: #eef4ff; border-color: #9bb8ff; }
+.workspace { padding: 16px; display: grid; gap: 16px; }
+.toolbar { display: flex; gap: 8px; }
+.canvas-panel { position: relative; min-height: 480px; border: 1px solid #ddd; overflow: auto; display: inline-block; width: fit-content; max-width: 100%; }
+#scene-image { display: block; max-width: 100%; height: auto; }
+#annotation-canvas { position: absolute; left: 0; top: 0; right: auto; bottom: auto; pointer-events: none; }
+.form-panel { display: grid; gap: 8px; }
+.status-row { color: #555; font-size: 14px; }
+.editor-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.editor-panel { border: 1px solid #ddd; padding: 12px; background: #fafafa; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.object-row, .relation-row { display: grid; gap: 8px; margin-bottom: 10px; border: 1px solid #e3e3e3; background: #fff; padding: 10px; }
+.object-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.relation-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.object-row input, .object-row select, .relation-row input, .relation-row select, .form-panel input, .form-panel textarea { width: 100%; box-sizing: border-box; }
+.bbox-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; grid-column: 1 / -1; }
+.attr-input { grid-column: 1 / -1; }
+.full-row { grid-column: 1 / -1; }
+.canvas-box { position: absolute; border: 2px solid #d9485f; background: rgba(217, 72, 95, 0.12); color: #111; font-size: 12px; padding: 2px 4px; box-sizing: border-box; pointer-events: auto; }
+.canvas-box[data-type="distractor"] { border-color: #2563eb; background: rgba(37, 99, 235, 0.12); }
+.canvas-box[data-type="landmark"] { border-color: #059669; background: rgba(5, 150, 105, 0.12); }
+@media (max-width: 1000px) { .editor-grid { grid-template-columns: 1fr; } }

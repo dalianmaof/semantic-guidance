@@ -55,3 +55,15 @@ def test_save_endpoint_persists_annotation(tmp_path, monkeypatch):
 
     assert response.status_code == 200
     assert response.get_json()["ok"] is True
+
+
+def test_index_html_contains_annotation_shell():
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert "image-list" in html
+    assert "annotation-canvas" in html
+    assert "save-button" in html

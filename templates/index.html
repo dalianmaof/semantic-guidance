@@ -2,9 +2,50 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Semantic Guidance Annotation Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   </head>
   <body>
-    <h1>Semantic Guidance Annotation Tool</h1>
+    <div class="layout">
+      <aside class="sidebar">
+        <h1>Scene Images</h1>
+        <ul id="image-list"></ul>
+      </aside>
+      <main class="workspace">
+        <div class="toolbar">
+          <button id="prev-button">Prev</button>
+          <button id="next-button">Next</button>
+          <button id="save-button">Save</button>
+        </div>
+        <div class="status-row" id="status-text">Loading...</div>
+        <div class="canvas-panel">
+          <img id="scene-image" alt="scene preview">
+          <div id="annotation-canvas"></div>
+        </div>
+        <section class="form-panel">
+          <label>Scene Tags <input id="scene-tags" type="text"></label>
+          <label>Target Object ID <input id="target-object-id" type="text"></label>
+          <textarea id="notes" placeholder="notes"></textarea>
+        </section>
+        <section class="editor-grid">
+          <div class="editor-panel">
+            <div class="panel-header">
+              <h2>Objects</h2>
+              <button id="add-object-button" type="button">Add Object</button>
+            </div>
+            <div id="object-list"></div>
+          </div>
+          <div class="editor-panel">
+            <div class="panel-header">
+              <h2>Relations</h2>
+              <button id="add-relation-button" type="button">Add Relation</button>
+            </div>
+            <div id="relation-list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>

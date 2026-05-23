@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 
 from semantic_guidance.annotation_store import AnnotationStore
 
@@ -29,6 +29,10 @@ def create_app() -> Flask:
         payload = request.get_json(force=True)
         store.save_annotation(image_name, payload)
         return jsonify({"ok": True})
+
+    @app.get("/data/images/<path:image_name>")
+    def get_image(image_name: str):
+        return send_from_directory(image_dir, image_name)
 
     return app
 
