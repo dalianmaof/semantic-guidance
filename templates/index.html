@@ -3,49 +3,130 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Semantic Guidance Annotation Tool</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+    <title>语义引导标注工具 — Semantic Guidance Annotation</title>
+    <meta name="description" content="语义增强协同侦察引导实验标注工具">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=4.0">
   </head>
   <body>
     <div class="layout">
+      <!-- ===== Left Sidebar: Image Progress ===== -->
       <aside class="sidebar">
-        <h1>Scene Images</h1>
-        <ul id="image-list"></ul>
+        <div class="sidebar-header">
+          <h1>🎯 场景图片</h1>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+          <div class="progress-text" id="progress-text">加载中...</div>
+        </div>
+        <div class="image-list-container">
+          <ul id="image-list"></ul>
+        </div>
       </aside>
+
+      <!-- ===== Center: Canvas ===== -->
       <main class="workspace">
         <div class="toolbar">
-          <button id="prev-button" disabled>Prev</button>
-          <button id="next-button" disabled>Next</button>
-          <button id="save-button" disabled>Save</button>
-        </div>
-        <div class="status-row" id="status-text">Loading...</div>
-        <div class="canvas-panel">
-          <img id="scene-image" alt="scene preview">
-          <div id="annotation-canvas"></div>
-        </div>
-        <section class="form-panel">
-          <label>Scene Tags <input id="scene-tags" type="text" disabled></label>
-          <label>Target Object ID <input id="target-object-id" type="text" disabled></label>
-          <textarea id="notes" placeholder="notes" disabled></textarea>
-        </section>
-        <section class="editor-grid">
-          <div class="editor-panel">
-            <div class="panel-header">
-              <h2>Objects</h2>
-              <button id="add-object-button" type="button" disabled>Add Object</button>
-            </div>
-            <div id="object-list"></div>
+          <div class="tool-group">
+            <button id="tool-draw" class="active" title="画框模式 (D)">✏️ 画框</button>
+            <button id="tool-select" title="选择模式 (S)">👆 选择</button>
           </div>
-          <div class="editor-panel">
-            <div class="panel-header">
-              <h2>Relations</h2>
-              <button id="add-relation-button" type="button" disabled>Add Relation</button>
-            </div>
-            <div id="relation-list"></div>
+          <div class="separator"></div>
+          <button id="prev-button" disabled title="上一张 (←)">◀ 上一张</button>
+          <button id="next-button" disabled title="下一张 (→)">▶ 下一张</button>
+          <div class="separator"></div>
+          <button id="save-button" class="btn-success" disabled title="保存 (Ctrl+S)">💾 保存</button>
+          <span class="status-text" id="status-text">加载中...</span>
+          <div style="flex-grow: 1;"></div>
+          <a href="/experiment" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 6px 12px; border-radius: var(--radius); background: linear-gradient(135deg, var(--accent), #4f46e5); color: white; border: 1px solid rgba(255, 255, 255, 0.15); font-weight: 600; font-size: 12.5px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(108, 140, 255, 0.3);" onmouseover="this.style.filter='brightness(1.15)'; this.style.transform='translateY(-1px)'" onmouseout="this.style.filter='none'; this.style.transform='none'">📊 批量对照评估中心</a>
+        </div>
+        <div class="canvas-area" id="canvas-area">
+          <div class="canvas-panel" id="canvas-panel">
+            <img id="scene-image" alt="场景预览">
+            <div id="annotation-canvas"></div>
           </div>
-        </section>
+        </div>
       </main>
+
+      <!-- ===== Right Panel: Annotation Form ===== -->
+      <aside class="annotation-panel">
+        <div class="panel-header">
+          <h2>📝 标注面板</h2>
+          <div class="image-name" id="current-image-name">--</div>
+        </div>
+
+        <!-- Guide Steps -->
+        <div class="guide-panel" id="guide-panel">
+          <div class="guide-title">标注引导</div>
+          <div class="guide-steps">
+            <div class="guide-step" id="guide-step-1"></div>
+            <div class="guide-step" id="guide-step-2"></div>
+            <div class="guide-step" id="guide-step-3"></div>
+            <div class="guide-step" id="guide-step-4"></div>
+          </div>
+          <div class="guide-text" id="guide-text">在左侧图片上拖拽画框，标注目标和干扰物</div>
+        </div>
+
+        <div class="panel-body">
+          <!-- Scene Info Section -->
+          <div class="section" id="section-scene">
+            <div class="section-header" onclick="toggleSection('section-scene')">
+              <h3>🏷️ 场景信息</h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="section-content">
+              <div class="form-group">
+                <label class="form-label" for="scene-tags">场景标签</label>
+                <input class="form-input" id="scene-tags" type="text" placeholder="airport, day, open_area" disabled>
+                <div class="form-help">用逗号分隔多个标签</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="target-object-id">真实目标 ID</label>
+                <select class="form-select" id="target-object-id" disabled>
+                  <option value="">（请先添加对象）</option>
+                </select>
+                <div class="form-help">选择本场景中的真实目标对象</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="notes">备注</label>
+                <textarea class="form-textarea" id="notes" placeholder="场景补充说明..." disabled></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Objects Section -->
+          <div class="section" id="section-objects">
+            <div class="section-header" onclick="toggleSection('section-objects')">
+              <h3>📦 对象列表 <span class="count-badge" id="object-count">0</span></h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="section-content">
+              <div id="object-list"></div>
+              <button class="add-btn" id="add-object-button" type="button" disabled>+ 添加对象</button>
+            </div>
+          </div>
+
+          <!-- Relations Section -->
+          <div class="section" id="section-relations">
+            <div class="section-header" onclick="toggleSection('section-relations')">
+              <h3>🔗 关系标注 <span class="count-badge" id="relation-count">0</span></h3>
+              <span class="chevron">▼</span>
+            </div>
+            <div class="section-content">
+              <div id="relation-list"></div>
+              <button class="add-btn" id="add-relation-button" type="button" disabled>+ 添加关系</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="btn btn-success" id="footer-save-button" disabled>💾 保存标注</button>
+        </div>
+
+        <div class="shortcut-hint">
+          <kbd>D</kbd> 画框 &nbsp; <kbd>S</kbd> 选择 &nbsp; <kbd>Del</kbd> 删除 &nbsp; <kbd>Ctrl+S</kbd> 保存
+        </div>
+      </aside>
     </div>
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="{{ url_for('static', filename='app.js') }}?v=4.0"></script>
   </body>
 </html>

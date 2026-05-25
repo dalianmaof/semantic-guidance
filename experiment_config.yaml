@@ -1,0 +1,10 @@
+sigmas: [5, 15, 30, 50]
+seeds_per_sigma: 10
+scoring_weights:
+  coordinate: 0.05
+  category: 20.0
+  attribute: 5.0
+  relation: 15.0
+  scene: 3.0
+output_dir: output/results
+

@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>协同侦察语义引导重识别批量评估中心</title>
+    <meta name="description" content="基于大模型与数学物理仿真的多自主平台协同语义引导重识别批量实验评估系统">
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}?v=4.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg-terminal: #090a0f;
+        --text-terminal: #34d399;
+        --border-glass: rgba(255, 255, 255, 0.08);
+        --bg-glass: rgba(34, 37, 54, 0.6);
+      }
+
+      /* Base layout adaptations */
+      .layout-exp {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+        background: radial-gradient(circle at top right, #1d2136 0%, var(--bg-primary) 70%);
+      }
+
+      /* Navbar */
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 24px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+
+      .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .navbar-brand h1 {
+        font-size: 18px;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--success));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 0.03em;
+      }
+
+      .navbar-brand span {
+        font-size: 11px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 2px 8px;
+        border-radius: 20px;
+        border: 1px solid rgba(108, 140, 255, 0.3);
+      }
+
+      .navbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .nav-btn {
+        background: var(--bg-input);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        padding: 8px 16px;
+        border-radius: var(--radius);
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .nav-btn:hover {
+        background: var(--bg-hover);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .nav-btn.active {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      /* Main container */
+      .exp-container {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 24px;
+      }
+
+      /* Left Configuration Panel */
+      .config-panel {
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .config-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 10px;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .form-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .group-selector {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .group-checkbox {
+        position: relative;
+      }
+
+      .group-checkbox input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+      }
+
+      .group-label {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 36px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text-secondary);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .group-checkbox input:checked + .group-label {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+        color: var(--accent);
+        font-weight: 600;
+        box-shadow: 0 0 10px rgba(108, 140, 255, 0.2);
+      }
+
+      .group-selector-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .small-btn {
+        background: transparent;
+        border: none;
+        color: var(--accent);
+        font-size: 11px;
+        cursor: pointer;
+        padding: 2px 4px;
+      }
+
+      .small-btn:hover {
+        text-decoration: underline;
+      }
+
+      .mode-card {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .mode-card.active {
+        border-color: var(--accent);
+        background: linear-gradient(135deg, rgba(108, 140, 255, 0.05), rgba(34, 37, 54, 0.8));
+      }
+
+      .mode-card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .mode-card-desc {
+        font-size: 11px;
+        color: var(--text-secondary);
+      }
+
+      .slider-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .slider-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+
+      .slider-value {
+        color: var(--warning);
+        font-weight: 600;
+      }
+
+      .custom-range {
+        width: 100%;
+        height: 6px;
+        background: var(--bg-input);
+        border-radius: 3px;
+        outline: none;
+        accent-color: var(--accent);
+      }
+
+      /* Right dashboard area */
+      .dashboard-area {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      /* Log console panel */
+      .console-panel {
+        background: var(--bg-terminal);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: var(--radius-lg);
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        display: flex;
+        flex-direction: column;
+        height: 260px;
+        overflow: hidden;
+      }
+
+      .console-header {
+        background: rgba(255, 255, 255, 0.02);
+        padding: 8px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .console-title {
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .console-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 8px var(--success);
+      }
+
+      .console-dot.inactive {
+        background: var(--text-muted);
+        box-shadow: none;
+      }
+
+      .console-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 16px;
+        font-family: 'Consolas', 'Courier New', Courier, monospace;
+        font-size: 12.5px;
+        line-height: 1.6;
+        color: #a7f3d0;
+      }
+
+      .console-body::-webkit-scrollbar { width: 6px; }
+      .console-body::-webkit-scrollbar-track { background: transparent; }
+      .console-body::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+
+      .log-line {
+        margin-bottom: 4px;
+        word-break: break-all;
+      }
+
+      .log-system { color: var(--accent); }
+      .log-observer { color: #fbbf24; }
+      .log-supporter { color: #38bdf8; }
+      .log-vlm-crop { color: #94a3b8; }
+      .log-vlm-output { color: #e2e8f0; font-style: italic; }
+      .log-success { color: #34d399; font-weight: bold; }
+      .log-fail { color: #f87171; font-weight: bold; }
+      .log-error { color: #f43f5e; font-weight: bold; background: rgba(244, 63, 94, 0.1); padding: 2px 6px; border-radius: 4px; }
+
+      /* Summary Panel */
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 16px;
+      }
+
+      .summary-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+      }
+
+      .card-coord::before { background: var(--distractor-color); }
+      .card-sim::before { background: var(--landmark-color); }
+      .card-vlm::before { background: var(--accent); }
+      .card-yolo::before { background: #c084fc; }
+      .card-latency::before { background: var(--warning); }
+      .card-calls::before { background: #ec4899; }
+
+      .summary-card-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      .summary-card-value {
+        font-size: 24px;
+        font-weight: 700;
+        margin-top: 8px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+
+      .summary-card-value span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+      }
+
+      /* Result display division */
+      .results-divider {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 24px;
+      }
+
+      .chart-panel, .table-panel {
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-glass);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-section-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Table styles */
+      .results-table-container {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 400px;
+      }
+
+      .results-table-container::-webkit-scrollbar { width: 4px; }
+      .results-table-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+      .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: left;
+      }
+
+      .results-table th {
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        font-weight: 600;
+        padding: 10px 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .results-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+      }
+
+      .results-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .badge-success {
+        background: var(--success-soft);
+        color: var(--success);
+        border: 1px solid rgba(52, 211, 153, 0.2);
+      }
+
+      .badge-danger {
+        background: var(--danger-soft);
+        color: var(--danger);
+        border: 1px solid rgba(248, 113, 113, 0.2);
+      }
+
+      .badge-info {
+        background: var(--accent-soft);
+        color: var(--accent);
+        border: 1px solid rgba(108, 140, 255, 0.2);
+      }
+
+      .log-btn {
+        background: var(--bg-input);
+        color: var(--accent);
+        border: 1px solid var(--border);
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: all 0.15s ease;
+      }
+
+      .log-btn:hover {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+      }
+
+      /* Big Launch Button */
+      .launch-btn {
+        background: linear-gradient(135deg, var(--accent), #4f46e5);
+        color: white;
+        border: none;
+        padding: 14px 20px;
+        border-radius: var(--radius);
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);
+      }
+
+      .launch-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.6);
+        filter: brightness(1.15);
+      }
+
+      .launch-btn:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .launch-btn:disabled {
+        background: var(--bg-input);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      /* Modal styling */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .modal-content {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        width: 680px;
+        max-width: 90%;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: modalFadeIn 0.25s ease-out;
+      }
+
+      @keyframes modalFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h3 {
+        font-size: 15px;
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 20px;
+        cursor: pointer;
+      }
+
+      .close-btn:hover {
+        color: var(--danger);
+      }
+
+      .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        max-height: 500px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .log-section {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+      }
+
+      .log-section-title {
+        font-size: 12px;
+        color: var(--accent);
+        font-weight: 600;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .log-text {
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 12.5px;
+        color: var(--text-primary);
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .progress-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 5px;
+      }
+
+      .progress-bar-bg {
+        height: 8px;
+        background: var(--bg-input);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-bar-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--success));
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+
+      .progress-info {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-secondary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout-exp">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-brand">
+          <h1>🛰️ 多平台协同语义引导重识别批量实验中心</h1>
+          <span>VLM-Simulation v2.5</span>
+        </div>
+        <div class="navbar-actions">
+          <a href="/" class="nav-btn">✏️ 返回语义标注中心</a>
+          <button class="nav-btn active">📊 批量对照评估中心</button>
+        </div>
+      </header>
+
+      <!-- Main container -->
+      <div class="exp-container">
+        <!-- Left: Configuration Form -->
+        <aside class="config-panel">
+          <div class="config-title">🏷️ 评估批次选择</div>
+          <div class="form-section">
+            <label class="form-label" style="font-size: 13px; color: var(--text-secondary);">选择参与评估的场景图像组</label>
+            <div class="group-selector">
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-a" name="group-chk" value="a" checked>
+                <label for="grp-a" class="group-label">A组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-b" name="group-chk" value="b" checked>
+                <label for="grp-b" class="group-label">B组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-c" name="group-chk" value="c" checked>
+                <label for="grp-c" class="group-label">C组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-d" name="group-chk" value="d" checked>
+                <label for="grp-d" class="group-label">D组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-e" name="group-chk" value="e" checked>
+                <label for="grp-e" class="group-label">E组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-f" name="group-chk" value="f" checked>
+                <label for="grp-f" class="group-label">F组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-g" name="group-chk" value="g" checked>
+                <label for="grp-g" class="group-label">G组</label>
+              </div>
+              <div class="group-checkbox">
+                <input type="checkbox" id="grp-h" name="group-chk" value="h" checked>
+                <label for="grp-h" class="group-label">H组</label>
+              </div>
+            </div>
+            <div class="group-selector-actions">
+              <button class="small-btn" onclick="selectAllGroups(true)">全选</button>
+              <button class="small-btn" onclick="selectAllGroups(false)">清空</button>
+            </div>
+          </div>
+
+          <div class="config-title">🎛️ 物理仿真环境噪声</div>
+          <div class="form-section">
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="form-label" style="color: var(--text-secondary);">定位噪差偏差量 (Sigma)</span>
+                <span class="slider-value" id="sigma-val">30 px</span>
+              </div>
+              <input type="range" class="custom-range" id="sigma-range" min="5" max="100" step="5" value="30" oninput="updateSigma(this.value)">
+              <div class="form-help" style="font-size: 11px; color: var(--text-muted);">模拟被引导者平台接收到坐标注入噪声后的偏差半径。偏差越大对语义引导依赖越高。</div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label class="form-label" for="seed-input" style="color: var(--text-secondary); font-size: 13px;">独立蒙特卡洛试验种子数量</label>
+              <input class="form-input" id="seed-input" type="text" value="1, 2" style="background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border); padding: 8px; color: var(--text-primary); width: 100%;">
+              <div class="form-help" style="font-size: 11px; color: var(--text-muted);">多个种子产生独立偏移量。用逗号分隔，例如: 1, 2, 3</div>
+            </div>
+          </div>
+
+          <div class="config-title">🤖 重识别重构决策引擎</div>
+          <div class="form-section">
+            <div class="mode-card active" id="mode-sim" onclick="switchMode(false)">
+              <div class="mode-card-header">
+                <input type="radio" id="radio-sim" name="mode-radio" checked style="pointer-events: none; accent-color: var(--accent);">
+                <span>📐 特征属性数学仿真评估</span>
+              </div>
+              <div class="mode-card-desc">使用已标注的语义标签进行理论建模逻辑匹配。评估速度极快（毫秒级）。</div>
+            </div>
+
+            <div class="mode-card" id="mode-vlm" onclick="switchMode(true)">
+              <div class="mode-card-header">
+                <input type="radio" id="radio-vlm" name="mode-radio" style="pointer-events: none; accent-color: var(--accent);">
+                <span>🧠 在线大语言模型闭环重构 (Qwen)</span>
+              </div>
+              <div class="mode-card-desc">自动截取目标图像切片并在线调用 local Qwen-VL-2B 模型，模拟真实半实物闭环对抗重识别过程。</div>
+            </div>
+
+            <div class="form-group" id="prompt-group" style="display: none; margin-top: 10px;">
+              <label class="form-label" for="prompt-textarea" style="color: var(--text-secondary); font-size: 13px;">侦察重识别大模型提示词模板</label>
+              <textarea class="form-textarea" id="prompt-textarea" style="background: var(--bg-input); border-radius: var(--radius); border: 1px solid var(--border); padding: 8px; color: var(--text-primary); width: 100%; height: 160px; font-size: 12px; line-height: 1.5; resize: none;">你是一个遥感图像目标重识别算法。前出侦察平台传回的语义目标包（STP）中，真实目标的特征属性描述为：{expected_attributes}，相对位置空间约束为：{expected_relations}。
+请问下面这幅局部目标图像切片是否符合该真实目标特征与空间关系？如果是真实目标，请只回答‘是’；如果不是，请只回答‘否’。同时请用一句话说明你的理由。</textarea>
+              <div class="form-help" style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">系统会自动将 <code style="color: var(--accent); font-family: monospace;">{expected_attributes}</code> 替换为真实属性特征列表，将 <code style="color: var(--accent); font-family: monospace;">{expected_relations}</code> 替换为对应观察者生成的相对空间位置约束描述。</div>
+            </div>
+          </div>
+
+          <div style="flex: 1;"></div>
+
+          <button class="launch-btn" id="btn-launch" onclick="startExperiment()">
+            <span>🚀 启动协同评估对照实验</span>
+          </button>
+          
+          <div class="progress-container" id="prog-container" style="display: none;">
+            <div class="progress-info">
+              <span id="prog-status">准备就绪</span>
+              <span id="prog-pct">0%</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="prog-fill"></div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right: Log Console, Metrics and Charts -->
+        <main class="dashboard-area">
+          <!-- Live Scrollable Log Terminal -->
+          <section class="console-panel">
+            <div class="console-header">
+              <div class="console-title">
+                <div class="console-dot" id="console-pulse"></div>
+                <span>EXECUTION LOG CONSOLE & PERFORMANCE METRICS</span>
+              </div>
+              <button class="small-btn" style="color: var(--text-muted);" onclick="clearLogs()">🧹 清空终端</button>
+            </div>
+            <div class="console-body" id="console-body">
+              <div class="log-line log-system">[系统运行环境] vLLM 本地推理实例监听 http://localhost:8000/v1 (模型: Qwen3-VL-2B)</div>
+              <div class="log-line log-system">[平台视角规则] A-01 节点代表「前出侦察平台」，产生 STP 语义目标描述包；A-02 及后续节点代表「精确引导支援平台」，依靠坐标及 STP 引导精确重识别。</div>
+              <div class="log-line log-system">已连接到半物理批量对照实验服务器。请在左侧设定物理噪差参数并启动协同对照实验。</div>
+            </div>
+          </section>
+
+          <!-- Core Metrics -->
+          <section class="summary-grid" id="summary-section">
+            <div class="summary-card card-coord">
+              <div class="summary-card-label">📍 坐标引导匹配成功率 (仅位置)</div>
+              <div class="summary-card-value" id="metric-coord">--%</div>
+            </div>
+            <div class="summary-card card-sim">
+              <div class="summary-card-label">📐 语义属性理论建模仿真成功率</div>
+              <div class="summary-card-value" id="metric-sim">--%</div>
+            </div>
+            <div class="summary-card card-vlm">
+              <div class="summary-card-label">🧠 在线大模型闭环重识别成功率</div>
+              <div class="summary-card-value" id="metric-vlm">--%</div>
+            </div>
+            <div class="summary-card card-yolo">
+              <div class="summary-card-label">🔮 YOLOv8 自动检测坐标匹配率</div>
+              <div class="summary-card-value" id="metric-yolo">--%</div>
+            </div>
+            <div class="summary-card card-latency">
+              <div class="summary-card-label">⚡ Qwen 单次图像推理平均延时</div>
+              <div class="summary-card-value" id="metric-latency">0.000<span>s</span></div>
+            </div>
+            <div class="summary-card card-calls">
+              <div class="summary-card-label">💾 目标包 STP 裁切调用次数</div>
+              <div class="summary-card-value" id="metric-calls">0<span>次</span></div>
+            </div>
+          </section>
+
+          <!-- Charts and Tables -->
+          <section class="results-divider">
+            <!-- Chart Panel -->
+            <div class="chart-panel">
+              <div class="panel-section-title">📊 匹配精准率对照与分析</div>
+              <div style="flex: 1; min-height: 280px; position: relative;">
+                <canvas id="resultsChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Detail Grid Table -->
+            <div class="table-panel">
+              <div class="panel-section-title">🔍 协同重识别明细数据快照</div>
+              <div class="results-table-container">
+                <table class="results-table">
+                  <thead>
+                    <tr>
+                      <th>场景组</th>
+                      <th>引导平台 (支援节点)</th>
+                      <th>坐标偏差(噪差)</th>
+                      <th>仅坐标定位</th>
+                      <th>语义理论仿真</th>
+                      <th>大模型闭环重识别</th>
+                      <th>YOLOv8基线 (自动检测)</th>
+                      <th>物理重识别日志</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-body">
+                    <tr>
+                      <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px 0;">暂无评估结果。请在左侧点击启动实验。</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal for detailed logs -->
+    <div class="modal" id="log-modal" onclick="closeModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 id="modal-title">大模型闭环物理对抗决策日志</h3>
+          <button class="close-btn" onclick="closeModal(null)">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="log-section">
+            <div class="log-section-title">🎯 侦察观察者节点 STP 特征属性包</div>
+            <div class="log-text" id="modal-stp">--</div>
+          </div>
+          <div class="log-section">
+            <div class="log-section-title">🛰️ 大模型输入物理图像与提示词 Prompt</div>
+            <div class="log-text" id="modal-prompt" style="color: var(--text-secondary); background: #131522; padding: 10px; border-radius: 4px;">--</div>
+          </div>
+          <div class="log-section">
+            <div class="log-section-title">🤖 在线本地大语言模型 (Qwen) 闭环辨识推理与说明</div>
+            <div class="log-text" id="modal-reason" style="color: var(--success); font-weight: 500; font-size: 13px; background: rgba(52, 211, 153, 0.05); padding: 10px; border-radius: 4px; border-left: 3px solid var(--success);">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+      let detailedVlmLogs = {}; // To store reasons & templates per candidate
+
+      // Page Load Initialization
+      window.addEventListener('DOMContentLoaded', () => {
+        initChart([0, 0, 0, 0]);
+      });
+
+      // Selection helpers
+      function selectAllGroups(checked) {
+        document.querySelectorAll('input[name="group-chk"]').forEach(chk => {
+          chk.checked = checked;
+        });
+      }
+
+      function updateSigma(val) {
+        document.getElementById('sigma-val').innerText = val + ' px';
+      }
+
+      function switchMode(isVlm) {
+        document.getElementById('mode-sim').classList.toggle('active', !isVlm);
+        document.getElementById('mode-vlm').classList.toggle('active', isVlm);
+        
+        document.getElementById('radio-sim').checked = !isVlm;
+        document.getElementById('radio-vlm').checked = isVlm;
+        
+        document.getElementById('prompt-group').style.display = isVlm ? 'block' : 'none';
+      }
+
+      function appendLog(text, type = '') {
+        const consoleBody = document.getElementById('console-body');
+        const line = document.createElement('div');
+        line.className = `log-line ${type}`;
+        
+        // Highlight logic
+        if (text.includes('Success') || text.includes('成功')) {
+          text = text.replace('Success', '<span class="log-success">成功</span>');
+        } else if (text.includes('Fail') || text.includes('失败')) {
+          text = text.replace('Fail', '<span class="log-fail">失败</span>');
+        }
+        
+        line.innerHTML = text;
+        consoleBody.appendChild(line);
+        consoleBody.scrollTop = consoleBody.scrollHeight;
+      }
+
+      function clearLogs() {
+        document.getElementById('console-body').innerHTML = '';
+      }
+
+      // Start Experiment SSE Session
+      function startExperiment() {
+        // Collect groups
+        const groups = [];
+        document.querySelectorAll('input[name="group-chk"]:checked').forEach(chk => {
+          groups.push(chk.value);
+        });
+
+        if (groups.length === 0) {
+          alert('请至少选择一个评估场景组！');
+          return;
+        }
+
+        const sigma = document.getElementById('sigma-range').value;
+        const seeds = document.getElementById('seed-input').value.trim();
+        const useRealVlm = document.getElementById('radio-vlm').checked;
+        const promptTemplate = document.getElementById('prompt-textarea').value;
+
+        // Reset display elements
+        document.getElementById('btn-launch').disabled = true;
+        document.getElementById('prog-container').style.display = 'block';
+        document.getElementById('prog-fill').style.width = '0%';
+        document.getElementById('prog-pct').innerText = '0%';
+        document.getElementById('prog-status').innerText = '连接服务器...';
+        
+        document.getElementById('console-pulse').classList.add('pulse');
+        appendLog(`------------------------------------------------------------------------`, 'log-system');
+        appendLog(`[主控命令] 触发批量侦察重识别实验。噪差=${sigma}px，种子=[${seeds}]，运行模式=${useRealVlm?'Qwen3-VL 在线大模型评估':'数学物理仿真评估'}`, 'log-system');
+
+        // Close existing EventSource if active
+        if (window.evtSource) {
+          window.evtSource.close();
+        }
+
+        // Detailed VLM Logs reset
+        detailedVlmLogs = {};
+
+        // Query string assembly
+        const params = new URLSearchParams({
+          groups: groups.join(','),
+          sigma: sigma,
+          seeds: seeds,
+          use_real_vlm: useRealVlm,
+          prompt_template: promptTemplate
+        });
+
+        const sseUrl = `/api/experiment/stream?${params.toString()}`;
+        window.evtSource = new EventSource(sseUrl);
+
+        window.evtSource.onmessage = function(event) {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'start') {
+            document.getElementById('prog-status').innerText = '初始化就绪';
+            appendLog(`[系统信息] ${data.message}`, 'log-system');
+          } 
+          else if (data.type === 'progress_update') {
+            document.getElementById('prog-status').innerText = data.message;
+            document.getElementById('prog-fill').style.width = `${data.progress}%`;
+            document.getElementById('prog-pct').innerText = `${data.progress}%`;
+            appendLog(`[执行进度] ${data.message}`, 'log-system');
+          } 
+          else if (data.type === 'log') {
+            let cls = 'log-system';
+            if (data.message.startsWith('Observer') || data.message.includes('侦察者')) {
+              cls = 'log-observer';
+            } else if (data.message.startsWith('Supporter') || data.message.includes('支援平台')) {
+              cls = 'log-supporter';
+            } else if (data.message.includes('Qwen') || data.message.includes('推理')) {
+              cls = 'log-vlm-crop';
+            }
+            appendLog(data.message, cls);
+          } 
+          else if (data.type === 'error') {
+            appendLog(`[运行错误] ${data.message}`, 'log-error');
+          } 
+          else if (data.type === 'done') {
+            // Process Summary Results
+            const s = data.summary;
+            document.getElementById('prog-status').innerText = '全部完成';
+            document.getElementById('prog-fill').style.width = '100%';
+            document.getElementById('prog-pct').innerText = '100%';
+            
+            document.getElementById('metric-coord').innerText = s.coord_rate + '%';
+            document.getElementById('metric-sim').innerText = s.sim_rate + '%';
+            document.getElementById('metric-vlm').innerText = useRealVlm ? (s.vlm_rate + '%') : 'N/A (仿真)';
+            document.getElementById('metric-yolo').innerText = s.yolo_rate + '%';
+            document.getElementById('metric-latency').innerHTML = s.avg_latency.toFixed(3) + '<span>s</span>';
+            document.getElementById('metric-calls').innerHTML = s.total_vlm_calls + '<span>次</span>';
+            
+            appendLog(`[实验完毕] ${data.message}`, 'log-success');
+            appendLog(`🎯 汇总报表 - 坐标成功率: ${s.coord_rate}%, 属性仿真率: ${s.sim_rate}%, 大模型闭环匹配率: ${useRealVlm ? (s.vlm_rate + '%') : 'N/A'}, YOLOv8自动检测成功率: ${s.yolo_rate}%, 大模型平均推理耗时: ${s.avg_latency.toFixed(3)}s`, 'log-success');
+
+            // Draw Chart
+            updateChart([s.coord_rate, s.sim_rate, useRealVlm ? s.vlm_rate : s.sim_rate, s.yolo_rate]);
+
+            // Rebuild Table
+            rebuildTable(s.all_results, useRealVlm);
+
+            // Unlock button
+            document.getElementById('btn-launch').disabled = false;
+            document.getElementById('console-pulse').classList.remove('pulse');
+            window.evtSource.close();
+          }
+        };
+
+        window.evtSource.onerror = function(err) {
+          appendLog(`[通讯异常] SSE 实时通信连接断开或发生异常。`, 'log-error');
+          document.getElementById('btn-launch').disabled = false;
+          document.getElementById('console-pulse').classList.remove('pulse');
+          window.evtSource.close();
+        };
+      }
+
+      // Table Builder
+      function rebuildTable(allResults, useRealVlm) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+
+        if (allResults.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px 0;">暂无评估结果。请启动实验。</td></tr>`;
+          return;
+        }
+
+        allResults.forEach(groupRes => {
+          const groupName = groupRes.group.toUpperCase();
+          const obsName = groupRes.observer;
+
+          groupRes.results.forEach(r => {
+            const tr = document.createElement('tr');
+            
+            const tdGroup = document.createElement('td');
+            tdGroup.innerHTML = `<b style="color: var(--accent);">${groupName}</b> <span style="font-size:11px; color:var(--text-muted);">(${obsName})</span>`;
+            tr.appendChild(tdGroup);
+
+            const tdSupporter = document.createElement('td');
+            tdSupporter.innerText = r.supporter;
+            tr.appendChild(tdSupporter);
+
+            const tdNoise = document.createElement('td');
+            tdNoise.innerText = `[${r.noisy_point.join(', ')}]`;
+            tdNoise.style.fontFamily = 'monospace';
+            tdNoise.style.color = 'var(--text-secondary)';
+            tr.appendChild(tdNoise);
+
+            // Coordinate Badge
+            const tdCoord = document.createElement('td');
+            const coordSucc = r.coordinate.success;
+            tdCoord.innerHTML = `<span class="badge ${coordSucc ? 'badge-success' : 'badge-danger'}">${coordSucc ? '✓' : '✗'} ${r.coordinate.selected}</span>`;
+            tr.appendChild(tdCoord);
+
+            // Simulation Badge
+            const tdSim = document.createElement('td');
+            const simSucc = r.simulation.success;
+            tdSim.innerHTML = `<span class="badge ${simSucc ? 'badge-success' : 'badge-danger'}">${simSucc ? '✓' : '✗'} ${r.simulation.selected}</span>`;
+            tr.appendChild(tdSim);
+
+            // VLM Badge
+            const tdVlm = document.createElement('td');
+            if (useRealVlm && r.vlm.logs) {
+              const vlmSucc = r.vlm.success;
+              tdVlm.innerHTML = `<span class="badge ${vlmSucc ? 'badge-success' : 'badge-danger'}">${vlmSucc ? '✓' : '✗'} ${r.vlm.selected}</span>`;
+            } else {
+              tdVlm.innerHTML = `<span class="badge badge-info">N/A (仅仿真)</span>`;
+            }
+            tr.appendChild(tdVlm);
+
+            // YOLO Badge
+            const tdYolo = document.createElement('td');
+            const yoloSucc = r.yolo ? r.yolo.success : false;
+            const yoloSelected = r.yolo ? r.yolo.selected : "未检测到";
+            tdYolo.innerHTML = `<span class="badge ${yoloSucc ? 'badge-success' : 'badge-danger'}">${yoloSucc ? '✓' : '✗'} ${yoloSelected}</span>`;
+            tr.appendChild(tdYolo);
+
+            // Action Log button
+            const tdAction = document.createElement('td');
+            if (useRealVlm && r.vlm.logs) {
+              const btn = document.createElement('button');
+              btn.className = 'log-btn';
+              btn.innerText = '🔍 重识别日志';
+              
+              // Store logs into our local cache
+              const logKey = `${groupRes.group}_${r.supporter}`;
+              const attrLine = groupRes.logs.find(l => l.includes('  Attributes:'));
+              const relLine = groupRes.logs.find(l => l.includes('  Relations:'));
+              detailedVlmLogs[logKey] = {
+                stp: `目标标识 ID: ${obsName}\n属性描述特征 (STP): [${attrLine ? attrLine.replace('  Attributes:', '').trim() : ''}]\n相对位置关系 (STP): [${relLine ? relLine.replace('  Relations:', '').trim() : '无位置约束'}]`,
+                logs: r.vlm.logs
+              };
+
+              btn.onclick = () => showLogModal(logKey);
+              tdAction.appendChild(btn);
+            } else {
+              tdAction.innerHTML = `<span style="color:var(--text-muted); font-size:11px;">无日志信息</span>`;
+            }
+            tr.appendChild(tdAction);
+
+            tbody.appendChild(tr);
+          });
+        });
+      }
+
+      // Chart.js Manager
+      function initChart(dataValues) {
+        const ctx = document.getElementById('resultsChart').getContext('2d');
+        chartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['📍 位置坐标重合算法', '📐 特征语义数学理论仿真', '🧠 本地大模型闭环重识别', '🔮 YOLOv8自动检测基线'],
+            datasets: [{
+              label: '平均重识别匹配成功率 (%)',
+              data: dataValues,
+              backgroundColor: [
+                'rgba(59, 130, 246, 0.45)', // Coordinate
+                'rgba(16, 185, 129, 0.45)', // Simulation
+                'rgba(108, 140, 255, 0.45)', // VLM
+                'rgba(192, 132, 252, 0.45)'  // YOLO
+              ],
+              borderColor: [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(108, 140, 255, 1)',
+                'rgba(192, 132, 252, 1)'
+              ],
+              borderWidth: 2,
+              borderRadius: 6,
+              barThickness: 38
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.05)'
+                },
+                ticks: {
+                  color: '#8b90a5',
+                  font: { family: 'Inter' }
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  color: '#e2e5f0',
+                  font: { family: 'Inter', weight: '600', size: 12 }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function updateChart(dataValues) {
+        if (chartInstance) {
+          chartInstance.data.datasets[0].data = dataValues;
+          chartInstance.update();
+        }
+      }
+
+      // Modal Manager
+      function showLogModal(key) {
+        const details = detailedVlmLogs[key];
+        if (!details) return;
+
+        document.getElementById('modal-stp').innerText = details.stp;
+        
+        let promptText = '';
+        let reasonText = '';
+
+        for (const [candId, logInfo] of Object.entries(details.logs)) {
+          promptText += `👉 候选人标号 [${candId}]:\n`;
+          promptText += `${logInfo.prompt}\n\n`;
+
+          reasonText += `👉 候选人标号 [${candId}] (辨识判断: ${logInfo.is_match ? '符合特征 (是)' : '不符合特征 (否)'}，用时: ${logInfo.latency.toFixed(2)}秒):\n`;
+          reasonText += `模型解译论证: ${logInfo.reason}\n\n`;
+        }
+
+        document.getElementById('modal-prompt').innerText = promptText;
+        document.getElementById('modal-reason').innerText = reasonText;
+
+        document.getElementById('log-modal').style.display = 'flex';
+      }
+
+      function closeModal(event) {
+        if (!event || event.target === document.getElementById('log-modal') || event.target.className === 'close-btn') {
+          document.getElementById('log-modal').style.display = 'none';
+        }
+      }
+    </script>
+  </body>
+</html>
