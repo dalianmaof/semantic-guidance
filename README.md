@@ -77,15 +77,30 @@ pip install -r requirements.txt
 ```
 *注：对于 YOLOv8 基线检测，会自动加载并使用 `ultralytics` 库。*
 
-### 3. 在线大模型 (vLLM/Ollama) 部署
-为了使用 **在线大模型闭环重识别**，需在本地部署 VLM 并确保监听 `http://localhost:8000/v1`：
+### 3. 在线大模型 (vLLM) 边缘端部署与直连配置
+为了实现高精度的闭环重识别，推荐在 **2080Ti (11G)** 推理机上运行 **Qwen2-VL-7B-Instruct-AWQ** 量化大模型。
+
+#### 💡 推理机启动命令 (Device 1, 局域网监听)
+通过配置 Eager 模式及裁剪最大长度，可将显存控制在极度安全的 **6-8GB** 范围内：
 ```bash
-# 启动示例 (使用 vllm 加载 Qwen3-VL-2B-Instruct)
-python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen3-VL-2B-Instruct \
+# 启动 vLLM 局域网服务 (使用 1 号显卡，限制最大上下文 4096，启用 eager 模式节省 1.5GB 显存)
+VLLM_USE_V1=0 CUDA_VISIBLE_DEVICES=1 nohup python3 -m vllm.entrypoints.openai.api_server \
+    --model Qwen/Qwen2-VL-7B-Instruct-AWQ \
+    --quantization awq \
     --port 8000 \
-    --trust-remote-code
+    --host 0.0.0.0 \
+    --trust-remote-code \
+    --max-model-len 4096 \
+    --gpu-memory-utilization 0.90 \
+    --enforce-eager \
+    > vllm_7b.log 2>&1 &
 ```
+*(注：你也可以通过我们提供的 `deploy_vllm_7b.sh [device_id]` 脚本一键传参启动！)*
+
+#### 📡 主机直连配置
+本系统已配置为 **局域网物理直连**。主控 Windows 机器无需 SSH 隧道，可直接通过推理机局域网 IP 直连访问。  
+后台配置的 API 地址为：`http://192.168.2.63:8000/v1/chat/completions`。  
+系统内置了 **大模型名字自愈感知机制**，启动后会自动检测推理机当前承载的模型服务名称，无需手动配置。
 
 ---
 

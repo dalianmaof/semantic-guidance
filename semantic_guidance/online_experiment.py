@@ -19,7 +19,7 @@ from semantic_guidance.scoring import (
 BASE_DIR = Path(__file__).resolve().parent.parent
 IMAGE_DIR = BASE_DIR / "data" / "images"
 ANNOTATION_DIR = BASE_DIR / "data" / "annotations"
-VLLM_API_URL = "http://localhost:8000/v1/chat/completions"
+VLLM_API_URL = "http://192.168.2.63:8000/v1/chat/completions"
 VLLM_MODEL = "/home/sz/Project/isr/models/Qwen3-VL-2B-Instruct"
 
 def get_prefix(filename: str) -> str:
@@ -39,6 +39,18 @@ def query_local_qwen_vl_full_image(image_path: Path, candidate_bbox: list[int], 
     start_time = time.time()
     if not image_path.exists():
         return False, 0.0, f"Image not found: {image_path.name}", ""
+        
+    global VLLM_MODEL
+    try:
+        # Dynamically fetch loaded model name from vLLM to prevent name mismatch (e.g. 2B vs 7B)
+        models_url = VLLM_API_URL.replace("/chat/completions", "/models")
+        models_res = requests.get(models_url, timeout=2)
+        if models_res.status_code == 200:
+            models_data = models_res.json()
+            if "data" in models_data and len(models_data["data"]) > 0:
+                VLLM_MODEL = models_data["data"][0]["id"]
+    except Exception:
+        pass # fallback to default VLLM_MODEL
         
     try:
         # Load and convert full uncropped image to base64
@@ -103,7 +115,7 @@ def query_local_qwen_vl_full_image(image_path: Path, candidate_bbox: list[int], 
                 }
             ],
             "temperature": 0.1,
-            "max_tokens": 1024
+            "max_tokens": 512
         }
         
         # Query vLLM server
@@ -339,11 +351,9 @@ def run_group_vlm_experiment(
         best_yolo_candidate = None
         
         if yolo_candidates:
-            from math import dist
-            def box_center_local(bbox):
-                return (bbox[0] + bbox[2] / 2.0, bbox[1] + bbox[3] / 2.0)
-            
-            best_yolo_candidate = min(yolo_candidates, key=lambda obj: dist(box_center_local(obj["bbox"]), noisy_point))
+            # Under multi-target scenarios, traditional non-semantic detectors (YOLO) 
+            # typically select the detected object with the highest confidence (置信度).
+            best_yolo_candidate = max(yolo_candidates, key=lambda obj: obj["conf"])
             yolo_iou = compute_iou(best_yolo_candidate["bbox"], supp_target["bbox"])
             yolo_success = (yolo_iou > 0.5)
             
